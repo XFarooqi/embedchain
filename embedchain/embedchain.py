@@ -243,26 +243,53 @@ class EmbedChain:
     def _append_search_and_context(self, context, web_search_result):
         return f"{context}\nWeb Search Result: {web_search_result}"
 
-    def generate_prompt(self, input_query, contexts, config: QueryConfig, **kwargs):
-        """
-        Generates a prompt based on the given query and context, ready to be
-        passed to an LLM
+const generate_prompt = (input_query, contexts, config, kwargs) => {
+    // Generate a string that represents the user's context
+    const context_string = contexts.join(' | ');
 
-        :param input_query: The query to use.
-        :param contexts: List of similar documents to the query used as context.
-        :param config: Optional. The `QueryConfig` instance to use as
-        configuration options.
-        :return: The prompt
-        """
-        context_string = (" | ").join(contexts)
-        web_search_result = kwargs.get("web_search_result", "")
-        if web_search_result:
-            context_string = self._append_search_and_context(context_string, web_search_result)
-        if not config.history:
-            prompt = config.template.substitute(context=context_string, query=input_query)
-        else:
-            prompt = config.template.substitute(context=context_string, query=input_query, history=config.history)
-        return prompt
+    // If there is a web search result, append it to the context
+    const web_search_result = kwargs.web_search_result;
+    if (web_search_result) {
+        context_string = _append_search_and_context(context_string, web_search_result);
+    }
+
+    // Generate the prompt
+    let prompt;
+    if (config.history) {
+        prompt = config.template.substitute({context: context_string, query: input_query, history: config.history});
+    } else {
+        prompt = config.template.substitute({context: context_string, query: input_query});
+    }
+    return prompt;
+}
+
+
+# function to generate prompt
+def generate_prompt(input_query, contexts, config, **kwargs):
+    """
+    Generates a prompt based on the given query and context.
+
+    :param input_query: The query to use.
+    :param contexts: Similar documents to the query used as context.
+    :param config: The query configuration.
+    :param kwargs: Optional. Any additional arguments to pass to the template.
+    :return: The prompt.
+    """
+    context_string = " | ".join(contexts)
+
+    # If there is a web search result, append it to the context
+    web_search_result = kwargs.get("web_search_result")
+    if web_search_result:
+        context_string = _append_search_and_context(context_string, web_search_result)
+
+    # Generate the prompt
+    if config.history:
+        prompt = config.template.substitute(
+            {"context": context_string, "query": input_query, "history": config.history}
+        )
+    else:
+        prompt = config.template.substitute({"context": context_string, "query": input_query})
+    return prompt
 
     def get_answer_from_llm(self, prompt, config: ChatConfig):
         """
